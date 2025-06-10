@@ -12,10 +12,10 @@ from src.ui.callbacks import (
 
 def main():
     # Настройка страницы
-    st.set_page_config(page_title="Решение задач линейного программирования", layout="wide")
+    st.set_page_config(page_title="Решение задач ЛП и ЦЛП", layout="wide")
 
     # Заголовок
-    st.title("Решение задач линейного программирования")
+    st.title("Решение задач ЛП и ЦЛП")
 
     # Инициализация состояния приложения
     init_session_state()
@@ -281,6 +281,16 @@ def main():
                     st.pyplot(fig)
                 except Exception as plot_error:
                     st.error(f"Не удалось построить график: {str(plot_error)}")
+
+    st.markdown("---")
+    st.markdown(
+        "<p style='text-align: center; color: grey;'>© 2025 Автор проекта: Павел Фатьянов, Новосибирский государственный технический университет</p>",
+        unsafe_allow_html=True
+    )
+    st.markdown(
+        "<p style='text-align: center; color: grey;'>Содействие оказала Казанская Ольга Васильевна.</p>",
+        unsafe_allow_html=True
+    )
 
 if __name__ == "__main__":
     main() 
