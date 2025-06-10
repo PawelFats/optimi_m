@@ -193,7 +193,8 @@ def main():
         try:
             # Отображаем задачу в математическом виде
             st.subheader("Поставленная задача:")
-            st.latex(f"{'\\max' if optimization_type == 'Максимум' else '\\min'} f(x) = {objective}")
+            latex_max_min = "\\max" if optimization_type == 'Максимум' else "\\min"
+            st.latex(latex_max_min + " f(x) = " + objective)
             st.latex("\\text{при ограничениях:}")
             for constraint in st.session_state.constraints:
                 constr_expr = construct_expression(constraint['left'])

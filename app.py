@@ -162,7 +162,7 @@ def parse_expression(expr_str):
 def plot_constraints(constraints_str, objective_str=None, solution=None, padding=2):
     """Построение графика ограничений и ОДР"""
     # Создаем фигуру с нужными пропорциями
-    fig = plt.figure(figsize=(12, 8))
+    fig = plt.figure(figsize=(10, 10))
     ax = fig.add_subplot(111)
     
     # Проверяем, есть ли ограничения
@@ -177,12 +177,12 @@ def plot_constraints(constraints_str, objective_str=None, solution=None, padding
     x_min, x_max = float('inf'), float('-inf')
     y_min, y_max = float('inf'), float('-inf')
     
-    # Собираем все точки пересечения ограничений
+    # Собираем все точки пересечения ограничений и оси
     intersections_x = []
     intersections_y = []
     
-    # Создаем список всех линий ограничений для поиска пересечений
-    lines = []
+    # Создаем список всех линий ограничений
+    lines = []  # (a, b, right_val, sign)
     for constraint in constraints:
         if '<=' in constraint:
             left, right = constraint.split('<=')
@@ -202,26 +202,23 @@ def plot_constraints(constraints_str, objective_str=None, solution=None, padding
         a = coeffs.get(1, 0)  # коэффициент при x₁
         b = coeffs.get(2, 0)  # коэффициент при x₂
         
-        if b != 0:
-            # y = (-ax + r)/b
+        if b != 0 or a != 0:
             lines.append((a, b, right_val, sign))
-        elif a != 0:
-            # Вертикальная линия x = r/a
-            x_val = right_val / a
-            x_min = min(x_min, x_val)
-            x_max = max(x_max, x_val)
+            
+            # Добавляем точки пересечения с осями
+            if b != 0:
+                # Пересечение с осью Y (x = 0)
+                y_intersect = right_val / b
+                intersections_y.append(y_intersect)
+                
+            if a != 0:
+                # Пересечение с осью X (y = 0)
+                x_intersect = right_val / a
+                intersections_x.append(x_intersect)
     
-    # Находим точки пересечения
+    # Находим точки пересечения прямых
     for i, line1 in enumerate(lines):
         a1, b1, r1, _ = line1
-        # Пересечение с осями
-        if b1 != 0:
-            # x = 0: y = r1/b1
-            intersections_y.append(r1/b1)
-            # y = 0: x = r1/a1
-            if a1 != 0:
-                intersections_x.append(r1/a1)
-        
         for line2 in lines[i+1:]:
             a2, b2, r2, _ = line2
             # Находим точку пересечения двух линий
@@ -239,42 +236,34 @@ def plot_constraints(constraints_str, objective_str=None, solution=None, padding
         intersections_x.append(x)
         intersections_y.append(y)
     
-    # Определяем границы графика на основе найденных точек
+    # Определяем границы графика
     if intersections_x:
-        x_min = min(min(intersections_x), x_min)
-        x_max = max(max(intersections_x), x_max)
+        x_min = min(0, min(intersections_x)) - 1
+        x_max = max(0, max(intersections_x)) + 1
     if intersections_y:
-        y_min = min(min(intersections_y), y_min)
-        y_max = max(max(intersections_y), y_max)
+        y_min = min(0, min(intersections_y)) - 1
+        y_max = max(0, max(intersections_y)) + 1
     
     # Если границы все еще не определены или слишком узкие
-    if x_min == float('inf') or x_max == float('-inf') or x_min == x_max:
-        x_min, x_max = -10, 10
-    if y_min == float('inf') or y_max == float('-inf') or y_min == y_max:
-        y_min, y_max = -10, 10
+    if x_min == float('inf') or x_max == float('-inf') or abs(x_max - x_min) < 2:
+        x_min, x_max = -5, 5
+    if y_min == float('inf') or y_max == float('-inf') or abs(y_max - y_min) < 2:
+        y_min, y_max = -5, 5
     
-    # Добавляем отступы
-    x_range = x_max - x_min
-    y_range = y_max - y_min
-    x_min -= x_range * padding/10
-    x_max += x_range * padding/10
-    y_min -= y_range * padding/10
-    y_max += y_range * padding/10
-    
-    # Создаем сетку точек
+    # Создаем сетку точек для построения
     x = np.linspace(x_min, x_max, 1000)
     
-    # Цвета для разных ограничений (пастельные тона)
-    colors = ['#FF9999', '#99FF99', '#9999FF', '#FFFF99', '#FF99FF', '#99FFFF']
+    # Настраиваем цвета для ограничений (приятные пастельные тона)
+    colors = ['#FF9999', '#99FF99', '#9999FF', '#FFCC99', '#FF99CC']
     
     # Добавляем оси координат
-    ax.axhline(y=0, color='k', linestyle='-', alpha=0.3, zorder=1)
-    ax.axvline(x=0, color='k', linestyle='-', alpha=0.3, zorder=1)
+    ax.axhline(y=0, color='black', linestyle='-', alpha=0.3, zorder=1)
+    ax.axvline(x=0, color='black', linestyle='-', alpha=0.3, zorder=1)
     
     # Список для хранения элементов легенды
     legend_elements = []
     
-    # Рисуем ограничения и их градиенты
+    # Рисуем ограничения
     for idx, constraint in enumerate(constraints):
         if '<=' in constraint:
             left, right = constraint.split('<=')
@@ -291,105 +280,105 @@ def plot_constraints(constraints_str, objective_str=None, solution=None, padding
         coeffs = parse_expression(left)
         right_val = float(right.strip())
         
-        # Получаем коэффициенты
         a = coeffs.get(1, 0)  # коэффициент при x₁
         b = coeffs.get(2, 0)  # коэффициент при x₂
         
-        # Нормализуем градиент
-        norm = np.sqrt(a**2 + b**2)
-        if norm > 0:
-            grad_x = a / norm
-            grad_y = b / norm
-        else:
-            continue
-            
         color = colors[idx % len(colors)]
         label = f"${left} {sign} {format_number(right_val)}$"
-            
+        
         if b != 0:
             # Выражаем x₂
             y = (-a*x + right_val) / b
-            # Рисуем линию
+            
+            # Рисуем основную линию
             line = ax.plot(x, y, color=color, label=label, linewidth=2, zorder=2)[0]
             legend_elements.append(line)
             
-            # Создаем "расчёску" вдоль линии
+            # Добавляем штрихи для показа направления ОДР
             if sign != '=':
-                # Вычисляем нормаль к линии
-                normal_x = -b / norm
-                normal_y = a / norm
+                # Вычисляем нормаль к линии (направление в сторону ОДР)
+                normal_x = b / np.sqrt(a**2 + b**2)
+                normal_y = -a / np.sqrt(a**2 + b**2)
                 
-                # Создаем точки вдоль линии для "зубцов"
-                num_teeth = 40  # количество зубцов
-                teeth_length = (x_max - x_min) / 30  # длина зубцов
+                # Если знак >=, меняем направление нормали
+                if sign == '>=':
+                    normal_x = -normal_x
+                    normal_y = -normal_y
                 
-                for t in np.linspace(0.1, 0.9, num_teeth):
+                # Создаем штрихи вдоль линии
+                num_hatch = 30
+                hatch_length = (x_max - x_min) / 40
+                
+                for t in np.linspace(0.1, 0.9, num_hatch):
                     x_base = x_min + t * (x_max - x_min)
                     y_base = (-a*x_base + right_val) / b
                     
-                    # Определяем направление зубцов в зависимости от знака неравенства
-                    direction = 1 if sign == '<=' else -1
-                    
-                    # Рисуем зубец
-                    ax.plot([x_base, x_base + direction * normal_x * teeth_length],
-                           [y_base, y_base + direction * normal_y * teeth_length],
-                           color=color, alpha=0.3, linewidth=1, zorder=2)
-                
+                    # Рисуем штрих
+                    ax.plot([x_base, x_base + normal_x * hatch_length],
+                           [y_base, y_base + normal_y * hatch_length],
+                           color=color, alpha=0.5, linewidth=1, zorder=2)
+        
         elif a != 0:
             # Вертикальная линия
             x_val = right_val / a
-            # Рисуем линию
             line = ax.axvline(x=x_val, color=color, label=label, linewidth=2, zorder=2)
             legend_elements.append(line)
             
-            # Создаем "расчёску" для вертикальной линии
+            # Добавляем штрихи для вертикальной линии
             if sign != '=':
-                direction = 1 if sign == '<=' else -1
-                num_teeth = 20
-                teeth_length = (x_max - x_min) / 30
+                direction = -1 if ((sign == '<=' and a > 0) or (sign == '>=' and a < 0)) else 1
+                num_hatch = 20
+                hatch_length = (x_max - x_min) / 40
                 
-                for y_base in np.linspace(y_min + (y_max-y_min)*0.1, 
-                                        y_min + (y_max-y_min)*0.9, num_teeth):
-                    ax.plot([x_val, x_val + direction * teeth_length],
+                for y_base in np.linspace(y_min + (y_max-y_min)*0.1,
+                                        y_min + (y_max-y_min)*0.9, num_hatch):
+                    ax.plot([x_val, x_val + direction * hatch_length],
                            [y_base, y_base],
-                           color=color, alpha=0.3, linewidth=1, zorder=2)
+                           color=color, alpha=0.5, linewidth=1, zorder=2)
     
     # Если есть решение, отмечаем точку решения
     if solution and solution['status'] == "Найдено оптимальное решение":
         x1 = solution['variables'].get('x₁', 0)
         x2 = solution['variables'].get('x₂', 0)
-        solution_point = ax.plot(x1, x2, 'r*', markersize=15, label='Оптимальное решение', zorder=3)[0]
+        solution_point = ax.plot(x1, x2, 'r*', markersize=15, label='Оптимальное решение', zorder=4)[0]
         legend_elements.append(solution_point)
         
         # Добавляем подпись к точке
         ax.annotate(f'$({format_number(x1)}, {format_number(x2)})$\n$f={format_number(solution["objective"])}$',
                    (x1, x2), xytext=(10, 10), textcoords='offset points',
                    bbox=dict(boxstyle='round,pad=0.5', fc='yellow', alpha=0.5),
-                   zorder=3)
+                   zorder=4)
     
-    # Если есть целевая функция, рисуем её линии уровня
+    # Если есть целевая функция, рисуем её градиент
     if objective_str:
         obj_coeffs = parse_expression(objective_str)
         if len(obj_coeffs) == 2:
+            # Получаем коэффициенты целевой функции
             a = obj_coeffs.get(1, 0)
             b = obj_coeffs.get(2, 0)
-            if b != 0:
-                # Вычисляем хорошие значения для линий уровня
-                if solution and solution['status'] == "Найдено оптимальное решение":
-                    optimal_value = solution['objective']
-                    levels = np.linspace(optimal_value - abs(optimal_value), 
-                                       optimal_value + abs(optimal_value), 5)
-                else:
-                    levels = np.linspace(-10, 10, 5)
+            
+            # Рисуем вектор градиента в центре графика
+            center_x = (x_max + x_min) / 2
+            center_y = (y_max + y_min) / 2
+            gradient_length = min(x_max - x_min, y_max - y_min) / 6
+            
+            # Нормализуем градиент
+            norm = np.sqrt(a**2 + b**2)
+            if norm > 0:
+                grad_x = a / norm * gradient_length
+                grad_y = b / norm * gradient_length
                 
-                for level in levels:
-                    y = (-a*x + level) / b
-                    ax.plot(x, y, 'k--', alpha=0.3, linewidth=1, zorder=1)
+                # Рисуем стрелку градиента
+                arrow = ax.arrow(center_x, center_y, grad_x, grad_y,
+                               head_width=gradient_length/10, head_length=gradient_length/8,
+                               fc='red', ec='red', alpha=0.6, zorder=3,
+                               label='Градиент целевой функции')
+                legend_elements.append(arrow)
     
     # Настройка графика
-    ax.grid(True, alpha=0.3, zorder=0)
-    ax.set_xlabel('$x_{1}$')
-    ax.set_ylabel('$x_{2}$')
+    ax.grid(True, linestyle='--', alpha=0.3, zorder=0)
+    ax.set_xlabel('$x_1$', fontsize=12)
+    ax.set_ylabel('$x_2$', fontsize=12)
     
     # Устанавливаем пределы осей
     ax.set_xlim(x_min, x_max)
@@ -398,9 +387,9 @@ def plot_constraints(constraints_str, objective_str=None, solution=None, padding
     # Делаем одинаковый масштаб по осям
     ax.set_aspect('equal')
     
-    # Добавляем легенду только если есть элементы для нее
+    # Добавляем легенду
     if legend_elements:
-        ax.legend(handles=legend_elements, bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
+        ax.legend(handles=legend_elements, bbox_to_anchor=(1.05, 1), loc='upper left')
     
     # Добавляем заголовок
     ax.set_title('Область допустимых решений (ОДР)', pad=20)
@@ -1016,7 +1005,8 @@ if st.button("Решить"):
     try:
         # Отображаем задачу в математическом виде
         st.subheader("Поставленная задача:")
-        st.latex(f"{'\\max' if optimization_type == 'Максимум' else '\\min'} f(x) = {objective}")
+        latex_max_min = "\\max" if optimization_type == "Максимум" else "\\min"
+        st.latex(latex_max_min + " f(x) = " + objective)
         st.latex("\\text{при ограничениях:}")
         for constraint in st.session_state.constraints:
             constr_expr = construct_expression(constraint['left'])
