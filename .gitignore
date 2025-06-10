@@ -1,0 +1,6 @@
+*.pkl
+.ipynb_checkpoints
+*.xlsx
+*.png
+__pycache__/
+*.py[cod]
