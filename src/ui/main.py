@@ -10,6 +10,14 @@ from src.ui.callbacks import (
     add_constraint, delete_constraint
 )
 
+import os
+import sys
+
+# Определяем корневую папку проекта: берем родительскую директорию от текущей директории файла
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
 def main():
     # Настройка страницы
     st.set_page_config(page_title="Решение задач ЛП и ЦЛП", layout="wide")
